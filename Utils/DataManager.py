@@ -263,7 +263,7 @@ class DataManager:
         # Get the current file's directory
         current_dir = os.path.dirname(os.path.abspath(__file__))
 
-        # Navigate to the StrategyLab directory
+        # Navigate to the AlgoTrade directory
         strategy_lab_dir = os.path.dirname(os.path.dirname(current_dir))
 
         # Create data directory path

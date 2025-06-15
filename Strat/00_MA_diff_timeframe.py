@@ -4,10 +4,10 @@ import numpy as np
 import talib as ta
 
 # --- Our Imports ---
-from Utils.DataManager import DataManager
-from Config.BacktestConfig import BacktestConfig
-from Backtester.BacktestRunner import BacktestRunner
-from Optimizer.StudyRunner import run_optimization
+from AlgoTrade.Utils.DataManager import DataManager
+from AlgoTrade.Config.BacktestConfig import BacktestConfig
+from AlgoTrade.Backtester.BacktestRunner import BacktestRunner
+from AlgoTrade.Optimizer.StudyRunner import run_optimization
 
 
 def pre_process_data(df1: pd.DataFrame, df2: pd.DataFrame):
@@ -131,7 +131,7 @@ def run_optimizer(data: pd.DataFrame):
 
 
 def test_strategy(data: pd.DataFrame):
-    folder_path = "D:/ComputerScience/Trading/Quant2/StrategyLab/Strat/strat_check"
+    folder_path = "D:/ComputerScience/Trading/Quant2/AlgoTrade/Strat/strat_check"
     data.to_csv(f"{folder_path}/data.csv")
     print(f"Data saved to {folder_path}/data.csv")
 

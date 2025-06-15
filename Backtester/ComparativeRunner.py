@@ -6,10 +6,10 @@ from typing import Dict
 
 # --- All Project Imports ---
 # Assuming your data preparation produces the final DataFrame
-# from StrategyLab.Utils.DataManager import DataManager
-from StrategyLab.Config.BacktestConfig import BacktestConfig
-from StrategyLab.Backtester.BacktestRunner import BacktestRunner
-from StrategyLab.Analysis.BacktestAnalysis import BacktestAnalysis
+# from AlgoTrade.Utils.DataManager import DataManager
+from AlgoTrade.Config.BacktestConfig import BacktestConfig
+from AlgoTrade.Backtester.BacktestRunner import BacktestRunner
+from AlgoTrade.Analysis.BacktestAnalysis import BacktestAnalysis
 
 
 def print_comparison_report(results_dict: Dict[str, BacktestAnalysis]):

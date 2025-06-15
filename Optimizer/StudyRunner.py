@@ -1,4 +1,4 @@
-# /StrategyLab/Optimizer/StudyRunner.py
+# /AlgoTrade/Optimizer/StudyRunner.py
 
 import optuna
 import pandas as pd
@@ -7,8 +7,8 @@ import math
 from typing import Dict, Any, Callable
 
 # --- All Project Imports ---
-from StrategyLab.Config.BacktestConfig import BacktestConfig
-from StrategyLab.Backtester.BacktestRunner import BacktestRunner
+from AlgoTrade.Config.BacktestConfig import BacktestConfig
+from AlgoTrade.Backtester.BacktestRunner import BacktestRunner
 
 n_cpus = multiprocessing.cpu_count()
 n_jobs = max(1, math.floor(n_cpus * 0.6))

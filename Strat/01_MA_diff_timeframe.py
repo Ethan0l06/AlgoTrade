@@ -4,10 +4,10 @@ import numpy as np
 import talib as ta
 
 # --- Our Imports ---
-from StrategyLab.Utils.DataManager import DataManager
-from StrategyLab.Config.BacktestConfig import BacktestConfig
-from StrategyLab.Backtester.BacktestRunner import BacktestRunner
-import StrategyLab.Backtester.ComparativeRunner as cr
+from AlgoTrade.Utils.DataManager import DataManager
+from AlgoTrade.Config.BacktestConfig import BacktestConfig
+from AlgoTrade.Backtester.BacktestRunner import BacktestRunner
+from AlgoTrade.Backtester import ComparativeRunner as cr
 
 
 def pre_process_data(df1: pd.DataFrame, df2: pd.DataFrame):

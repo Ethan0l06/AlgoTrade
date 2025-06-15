@@ -6,9 +6,9 @@ from typing import Dict, Any, List, Optional
 import datetime
 import numpy as np
 
-from StrategyLab.Config.BacktestConfig import BacktestConfig
-from StrategyLab.Utils.Position import Position
-from StrategyLab.Analysis.BacktestAnalysis import BacktestAnalysis
+from AlgoTrade.Config.BacktestConfig import BacktestConfig
+from AlgoTrade.Utils.Position import Position
+from AlgoTrade.Analysis.BacktestAnalysis import BacktestAnalysis
 
 
 class BacktestRunner:
