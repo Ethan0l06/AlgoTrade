@@ -19,7 +19,11 @@ class BaseStrategy(ABC):
         """
         raise NotImplementedError("Each strategy must implement this method.")
 
-    def run_single(self, plot_interactive_trades: bool = False):
+    def run_single(
+        self,
+        plot_interactive_trades: bool = False,
+        generate_quantstats_report: bool = False,
+    ):
         """Runs a single backtest with the strategy's signals."""
         print("\\n--- Running Single Backtest ---")
         signal_df = self.generate_signals()
@@ -28,7 +32,8 @@ class BaseStrategy(ABC):
         analysis.print_metrics()
         if plot_interactive_trades:
             analysis.plot_interactive_trades()
-        analysis.generate_quantstats_report()
+        if generate_quantstats_report:
+            analysis.generate_quantstats_report()
         return analysis
 
     def run_comparative(self):

@@ -2,9 +2,13 @@ import pandas as pd
 import numpy as np
 from AlgoTrade.Utils.DataManager import DataManager
 from AlgoTrade.Config.BacktestConfig import BacktestConfig
-from AlgoTrade.Config.Enums import TradingMode, PositionSizingMethod
+from AlgoTrade.Config.Enums import TradingMode
 from AlgoTrade.Strat.Class.BaseStrategy import BaseStrategy
 from AlgoTrade.Factories.IndicatorFactory import IndicatorFactory
+from AlgoTrade.Config.BacktestConfig import BacktestConfig
+from AlgoTrade.Sizing.FixedAmountSizer import FixedAmountSizer
+from AlgoTrade.Sizing.PercentBalanceSizer import PercentBalanceSizer
+from AlgoTrade.Sizing.AtrBandsSizer import AtrBandsSizer
 
 
 class MaDiffTimeframeStrategy(BaseStrategy):
@@ -54,17 +58,48 @@ class MaDiffTimeframeStrategy(BaseStrategy):
 
 
 def main():
-    config = BacktestConfig(
+    # ============== Fixed Amount Sizer ==============
+    fixed_sizer = FixedAmountSizer(amount=10.0)
+    config_fixed_amount = BacktestConfig(
         initial_balance=30.0,
+        leverage=10,
         trading_mode=TradingMode.CROSS,
-        leverage=5,
-        position_sizing_method=PositionSizingMethod.PERCENT_BALANCE,
-        percent_balance_pct=0.3
-        
+        sizing_strategy=fixed_sizer,  # Pass the sizer object here
+    )
+
+    # ============== ATR Bands Sizer ==============
+    leverage = 10
+    atr_sizer = AtrBandsSizer(
+        risk_pct=0.01,  # Risk 1% of total equity per trade.
+        atr_multiplier=1.0,  # Set Stop-Loss at 2x ATR away from the entry price.
+        risk_reward_ratio=1.5,  # Set Take-Profit at 1.5x the Stop-Loss distance.
+        leverage=leverage,  # Pass the leverage to the sizer.
+    )
+    config_atr_bands = BacktestConfig(
+        initial_balance=3000.0,
+        leverage=leverage,
+        trading_mode=TradingMode.CROSS,
+        sizing_strategy=atr_sizer,  # Pass the configured sizer object.
+    )
+
+    # ============== Percent Balance Sizer ==============
+    percent_sizer = PercentBalanceSizer(percent=0.05)  # Use 5% of balance for margin
+    config_percent_balance = BacktestConfig(
+        initial_balance=30.0,
+        leverage=10,
+        trading_mode=TradingMode.CROSS,
+        sizing_strategy=percent_sizer,  # Pass the sizer object.
+    )
+
+    # ============== Backtest Config For Comparative Runner ==============
+    backtest_configs = BacktestConfig(
+        initial_balance=3000.0,
+        leverage=1,
+        trading_mode=TradingMode.CROSS,
     )
 
     strategy = MaDiffTimeframeStrategy(
-        config=config,
+        config=backtest_configs,
         symbol_ltf="ADA/USDT:USDT",
         tframe_ltf="15m",
         symbol_htf="ADA/USDT:USDT",
@@ -72,7 +107,7 @@ def main():
         start_date="2024-01-01",
     )
 
-    strategy.run_single()
+    # strategy.run_single()
     strategy.run_comparative()
 
 

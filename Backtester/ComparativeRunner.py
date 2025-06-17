@@ -1,10 +1,13 @@
-# /TradingBacktester/comparative_run.py
-
 import pandas as pd
 import copy
-from typing import Dict
+from typing import Dict, List
 from AlgoTrade.Config.BacktestConfig import BacktestConfig
-from AlgoTrade.Config.Enums import PositionSizingMethod
+from AlgoTrade.Sizing.BaseSizer import BaseSizer
+from AlgoTrade.Sizing.FixedAmountSizer import FixedAmountSizer
+from AlgoTrade.Sizing.PercentBalanceSizer import PercentBalanceSizer
+from AlgoTrade.Sizing.AtrBandsSizer import AtrBandsSizer
+
+# Import other sizers as they are created
 from AlgoTrade.Backtester.BacktestRunner import BacktestRunner
 from AlgoTrade.Analysis.BacktestAnalysis import BacktestAnalysis
 
@@ -23,7 +26,7 @@ def print_comparison_report(results_dict: Dict[str, BacktestAnalysis]):
     print(" " * 20 + "Comprehensive Backtest Comparison Report")
     print("=" * 80)
     print(
-        f"Period: [{results_dict["PercentBalance"].results_df.index[0].date()}] -> [{results_dict["PercentBalance"].results_df.index[-1].date()}]"
+        f"Period: [{results_dict["PercentBalanceSizer"].results_df.index[0].date()}] -> [{results_dict["PercentBalanceSizer"].results_df.index[-1].date()}]"
     )
     report_data = []
 
@@ -54,7 +57,9 @@ def print_comparison_report(results_dict: Dict[str, BacktestAnalysis]):
         else:
             row = {"Method": method}
             for metric, fmt in metrics_to_display.items():
-                value = analysis.metrics.get(metric, 0)  # Default to 0 if metric is missing
+                value = analysis.metrics.get(
+                    metric, 0
+                )  # Default to 0 if metric is missing
                 row[metric] = fmt.format(value) if pd.notna(value) else "N/A"
 
         report_data.append(row)
@@ -71,15 +76,33 @@ def print_comparison_report(results_dict: Dict[str, BacktestAnalysis]):
     print("=" * 80)
 
 
-def run_comparative_analysis(base_config: BacktestConfig, data: pd.DataFrame) -> Dict[str, BacktestAnalysis]:
-    methods_to_compare = list(PositionSizingMethod)
+def run_comparative_analysis(
+    base_config: BacktestConfig, data: pd.DataFrame
+) -> Dict[str, BacktestAnalysis]:
+
+    # Define the list of strategy objects to compare
+    sizers_to_compare: List[BaseSizer] = [
+        PercentBalanceSizer(percent=0.1),  # 10% of balance
+        FixedAmountSizer(amount=10.0),  # $100 margin
+        AtrBandsSizer(
+            risk_pct=0.01,
+            atr_multiplier=2.0,
+            risk_reward_ratio=1.5,
+            leverage=base_config.leverage,
+        ),
+    ]
+
     all_results = {}
 
-    for method in methods_to_compare:
-        print(f"\n--- Running Backtest for: {method.value} ---")
+    for sizer in sizers_to_compare:
+        method_name = sizer.__class__.__name__
+        print(f"\n--- Running Backtest for: {method_name} ---")
+
         current_config = copy.deepcopy(base_config)
-        current_config.position_sizing_method = method
+        current_config.sizing_strategy = sizer  # Assign the sizer object
+
         runner = BacktestRunner(config=current_config, data=data)
         analysis = runner.run()
-        all_results[method.value] = analysis
+        all_results[method_name] = analysis
+
     return all_results
