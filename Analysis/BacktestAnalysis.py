@@ -7,7 +7,8 @@ import numpy as np
 # Import for the new interactive plot
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
-
+import quantstats_lumi as quantstats
+from AlgoTrade.Config.Paths import QUANTSSTATS_DIR
 
 class BacktestAnalysis:
     def __init__(self, runner):
@@ -209,143 +210,19 @@ class BacktestAnalysis:
         )
         print(f"Profit Factor:          {self.metrics.get('profit_factor', 0):.2f}")
 
-    def plot_equity(self):
-        # ... (unchanged)
-        if self.wallet.empty:
+    def generate_quantstats_report(self, output_filename="strategy_report.html"):
+        """Generates a comprehensive HTML report using the quantstats library."""
+        if not quantstats:
+            print("Cannot generate report: quantstats library is not installed.")
             return
-            fig, ax1 = plt.subplots(figsize=(15, 7))
-            ax1.set_title("Equity Curve vs. Asset Price")
-        ax1.set_xlabel("Date")
-        ax1.set_ylabel("Equity", color="tab:blue")
-        ax1.plot(self.wallet.index, self.wallet["equity"], color="tab:blue")
-        ax1.tick_params(axis="y", labelcolor="tab:blue")
-        ax2 = ax1.twinx()
-        ax2.set_ylabel("Asset Price", color="tab:grey")
-        ax2.plot(
-            self.results_df.index, self.results_df["close"], color="tab:grey", alpha=0.5
-        )
-        ax2.tick_params(axis="y", labelcolor="tab:grey")
-        fig.tight_layout()
-        plt.show()
-
-    def plot_drawdown(self):
-        # ... (unchanged)
-        if self.wallet.empty:
+        if self.results_df.empty:
+            print("No data available to generate a report.")
             return
-            plt.figure(figsize=(15, 7))
-            plt.plot(
-                self.wallet.index,
-                self.wallet["drawdown_pct"] * 100,
-                color="red",
-                alpha=0.7,
-            )
-        plt.fill_between(
-            self.wallet.index,
-            self.wallet["drawdown_pct"] * 100,
-            0,
-            color="red",
-            alpha=0.3,
-        )
-        plt.title("Drawdown Over Time")
-        plt.xlabel("Date")
-        plt.ylabel("Drawdown (%)")
-        plt.grid(True, alpha=0.3)
-        plt.show()
 
-    def plot_trade_distribution(self):
-        # ... (unchanged)
-        if self.trades.empty:
-            return
-            plt.figure(figsize=(15, 7))
-            sns.histplot(data=self.trades["net_pnl_pct"], bins=50, kde=True)
-        plt.title("Distribution of Trade Returns (%)")
-        plt.xlabel("Return (%)")
-        plt.ylabel("Frequency")
-        plt.axvline(x=0, color="r", linestyle="--", alpha=0.5)
-        plt.grid(True, alpha=0.3)
-        plt.show()
-
-    def plot_monthly_returns(self):
-        # ... (unchanged)
-        if self.wallet.empty:
-            return
-            monthly_returns = (
-                self.wallet["equity"].resample("ME").last().pct_change() * 100
-            )
-        monthly_returns = monthly_returns.to_frame()
-        monthly_returns.index = pd.to_datetime(monthly_returns.index)
-        monthly_returns_pivot = pd.pivot_table(
-            data=monthly_returns,
-            values="equity",
-            index=monthly_returns.index.year,
-            columns=monthly_returns.index.month,
-            aggfunc="first",
+        output_path = QUANTSSTATS_DIR / output_filename
+        print(f"Generating QuantStats report to {output_path}...")
+        returns = self.results_df["equity"].resample("D").last().pct_change().fillna(0)
+        quantstats.reports.html(
+            returns, output=str(output_path), title="Strategy Performance Report"
         )
-        plt.figure(figsize=(15, 7))
-        sns.heatmap(
-            monthly_returns_pivot,
-            annot=True,
-            fmt=".1f",
-            center=0,
-            cmap="RdYlGn",
-            cbar_kws={"label": "Returns (%)"},
-        )
-        plt.title("Monthly Returns Heatmap")
-        plt.xlabel("Month")
-        plt.ylabel("Year")
-        plt.show()
-
-    def plot_trade_analysis(self):
-        # ... (unchanged)
-        if self.trades.empty:
-            return
-            fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(20, 15))
-        ax1.plot(
-            pd.to_datetime(self.trades["close_time"]),
-            self.trades["net_pnl"].cumsum(),
-            color="blue",
-        )
-        ax1.set_title("Cumulative PnL Over Time")
-        ax1.set_xlabel("Date")
-        ax1.set_ylabel("Cumulative PnL")
-        ax1.grid(True, alpha=0.3)
-        monthly_duration = (
-            self.trades.set_index(pd.to_datetime(self.trades["close_time"]))["duration"]
-            .resample("ME")
-            .mean()
-        )
-        ax2.bar(
-            monthly_duration.index,
-            monthly_duration.dt.total_seconds() / 3600,
-            color="green",
-            alpha=0.7,
-        )
-        ax2.set_title("Average Trade Duration by Month")
-        ax2.set_xlabel("Date")
-        ax2.set_ylabel("Duration (hours)")
-        ax2.grid(True, alpha=0.3)
-        monthly_win_rate = (
-            self.trades.set_index(pd.to_datetime(self.trades["close_time"]))["net_pnl"]
-            > 0
-        ).resample("ME").mean() * 100
-        ax3.bar(monthly_win_rate.index, monthly_win_rate, color="purple", alpha=0.7)
-        ax3.set_title("Monthly Win Rate")
-        ax3.set_xlabel("Date")
-        ax3.set_ylabel("Win Rate (%)")
-        ax3.grid(True, alpha=0.3)
-        ax4.hist(self.trades["net_pnl"], bins=50, color="orange", alpha=0.7)
-        ax4.set_title("Trade PnL Distribution")
-        ax4.set_xlabel("PnL")
-        ax4.set_ylabel("Frequency")
-        ax4.grid(True, alpha=0.3)
-        plt.tight_layout()
-        plt.show()
-
-    def plot_all(self):
-        # As requested, the new interactive plot is NOT included here.
-        # It must be called separately.
-        self.plot_equity()
-        self.plot_drawdown()
-        self.plot_trade_distribution()
-        self.plot_monthly_returns()
-        self.plot_trade_analysis()
+        print(f"Report saved to {output_path}")

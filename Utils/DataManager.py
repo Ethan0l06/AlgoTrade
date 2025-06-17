@@ -4,7 +4,7 @@ from pathlib import Path
 from datetime import datetime, timedelta
 from typing import Dict, Any, Optional, List, Literal
 import os
-
+from AlgoTrade.Config.Paths import DATA_DIR
 
 EXCHANGES: Dict[str, Dict[str, Any]] = {
     "bitget": {
@@ -211,94 +211,34 @@ class DataManager:
         return ohlcv
 
     def to_local(self, data: pd.DataFrame, symbol: str, timeframe: str) -> None:
-        """
-        Save OHLCV data to a CSV file in the code layer's data directory.
+        """Saves OHLCV data to a CSV file in the configured data directory."""
+        exchange_dir = DATA_DIR / self.name
+        exchange_dir.mkdir(exist_ok=True)
 
-        Args:
-            data: DataFrame containing OHLCV data
-            symbol: Trading pair symbol (e.g., 'BTC/USDT')
-            timeframe: Timeframe of the data
-        """
-        # Get the current file's directory
-        current_dir = os.path.dirname(os.path.abspath(__file__))
-
-        # Navigate to the code layer (two levels up from utilities)
-        code_dir = os.path.dirname(os.path.dirname(current_dir))
-
-        # Create data directory path
-        data_dir = os.path.join(code_dir, "data")
-
-        # Create exchange-specific directory path
-        exchange_dir = os.path.join(data_dir, self.name)
-
-        # Create directories if they don't exist
-        os.makedirs(data_dir, exist_ok=True)
-        os.makedirs(exchange_dir, exist_ok=True)
-
-        # Clean up symbol name for filename (replace / and : with _)
         clean_symbol = symbol.replace("/", "_").replace(":", "_")
+        file_path = exchange_dir / f"{clean_symbol}_{timeframe}.csv"
 
-        # Create the full file path
-        file_path = os.path.join(exchange_dir, f"{clean_symbol}_{timeframe}.csv")
-
-        # Save to CSV
         print(f"Exporting data to {file_path}...")
         data.to_csv(file_path)
         print("Export completed successfully.")
 
-    def from_local(
-        self, symbol: str, timeframe: str, start_date: datetime
-    ) -> pd.DataFrame:
-        """
-        Load OHLCV data from a CSV file in the code layer's data directory.
-
-        Args:
-            symbol: Trading pair symbol (e.g., 'BTC/USDT')
-            timeframe: Timeframe of the data
-            start_date: Start date of the data (e.g., '2022-01-01')
-
-        Returns:
-            DataFrame containing OHLCV data
-        """
-        # Get the current file's directory
-        current_dir = os.path.dirname(os.path.abspath(__file__))
-
-        # Navigate to the AlgoTrade directory
-        strategy_lab_dir = os.path.dirname(os.path.dirname(current_dir))
-
-        # Create data directory path
-        data_dir = os.path.join(strategy_lab_dir, "data")
-
-        # Create exchange-specific directory path
-        exchange_dir = os.path.join(data_dir, self.name)
-
-        # Clean up symbol name for filename (replace / and : with _)
+    def from_local(self, symbol: str, timeframe: str, start_date: str) -> pd.DataFrame:
+        """Loads OHLCV data from a CSV file in the configured data directory."""
+        exchange_dir = DATA_DIR / self.name
         clean_symbol = symbol.replace("/", "_").replace(":", "_")
+        file_path = exchange_dir / f"{clean_symbol}_{timeframe}.csv"
 
-        # Create the full file path
-        file_path = os.path.join(exchange_dir, f"{clean_symbol}_{timeframe}.csv")
-
-        # Check if file exists
-        if not os.path.exists(file_path):
+        if not file_path.exists():
             raise FileNotFoundError(f"No data file found at {file_path}")
 
-        # Read CSV with proper datetime index handling
         print(f"Loading data from {file_path}...")
-        data = pd.read_csv(file_path)
+        data = pd.read_csv(file_path, index_col="date", parse_dates=True)
 
-        # Convert column date to index and datetime
-        data.set_index("date", inplace=True)
-        data.index = pd.to_datetime(data.index)
-
-        # Filter by date range
-        if start_date is not None:
+        if start_date:
             data = data.loc[start_date:]
 
-        # Convert column names to lowercase
         data.columns = [col.lower() for col in data.columns]
-        
-        # Sort by date
         data.sort_index(inplace=True)
 
-        print("Load completed successfully. Data shape:", data.shape)
+        print(f"Load completed successfully. Data shape: {data.shape}")
         return data

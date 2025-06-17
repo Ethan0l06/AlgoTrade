@@ -3,11 +3,8 @@
 import pandas as pd
 import copy
 from typing import Dict
-
-# --- All Project Imports ---
-# Assuming your data preparation produces the final DataFrame
-# from AlgoTrade.Utils.DataManager import DataManager
 from AlgoTrade.Config.BacktestConfig import BacktestConfig
+from AlgoTrade.Config.Enums import PositionSizingMethod
 from AlgoTrade.Backtester.BacktestRunner import BacktestRunner
 from AlgoTrade.Analysis.BacktestAnalysis import BacktestAnalysis
 
@@ -57,9 +54,7 @@ def print_comparison_report(results_dict: Dict[str, BacktestAnalysis]):
         else:
             row = {"Method": method}
             for metric, fmt in metrics_to_display.items():
-                value = analysis.metrics.get(
-                    metric, 0
-                )  # Default to 0 if metric is missing
+                value = analysis.metrics.get(metric, 0)  # Default to 0 if metric is missing
                 row[metric] = fmt.format(value) if pd.notna(value) else "N/A"
 
         report_data.append(row)
@@ -76,43 +71,15 @@ def print_comparison_report(results_dict: Dict[str, BacktestAnalysis]):
     print("=" * 80)
 
 
-def run_comparative_analysis(
-    base_config: BacktestConfig, data: pd.DataFrame
-) -> Dict[str, BacktestAnalysis]:
-    """
-    Orchestrates multiple backtest runs, one for each position sizing method.
-
-    Args:
-        base_config (BacktestConfig): The base configuration with common settings.
-        data (pd.DataFrame): The prepared DataFrame with signals.
-
-    Returns:
-        Dict[str, BacktestAnalysis]: A dictionary containing the analysis object for each method.
-    """
-    methods_to_compare = [
-        "PercentBalance",
-        "FixedAmount",
-        "AtrVolatility",
-        "KellyCriterion",
-        "AtrBands",
-    ]
-
+def run_comparative_analysis(base_config: BacktestConfig, data: pd.DataFrame) -> Dict[str, BacktestAnalysis]:
+    methods_to_compare = list(PositionSizingMethod)
     all_results = {}
 
     for method in methods_to_compare:
-        print("\n" + "-" * 50)
-        print(f"--- Running Backtest for: {method} ---")
-        print("-" * 50)
-
-        # Create a deep copy to ensure settings don't leak between runs
+        print(f"\n--- Running Backtest for: {method.value} ---")
         current_config = copy.deepcopy(base_config)
         current_config.position_sizing_method = method
-
-        # Instantiate and run the backtester
         runner = BacktestRunner(config=current_config, data=data)
         analysis = runner.run()
-
-        # Store the completed analysis object
-        all_results[method] = analysis
-
+        all_results[method.value] = analysis
     return all_results

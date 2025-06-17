@@ -1,0 +1,9 @@
+pandas
+numpy
+matplotlib
+seaborn
+plotly
+TA-Lib
+ccxt
+optuna
+quantstats
