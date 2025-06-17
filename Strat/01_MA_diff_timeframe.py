@@ -94,7 +94,7 @@ def main():
     # ============== Backtest Config For Comparative Runner ==============
     backtest_configs = BacktestConfig(
         initial_balance=3000.0,
-        leverage=1,
+        leverage=10,
         trading_mode=TradingMode.CROSS,
     )
 

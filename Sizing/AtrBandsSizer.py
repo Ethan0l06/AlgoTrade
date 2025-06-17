@@ -26,13 +26,17 @@ class AtrBandsSizer(BaseSizer):
         balance: float,
         equity: float,
         price: float,
+        side: str,
         trade_history: pd.DataFrame,
         atr_value: Optional[float] = None,
-        side: str = "long",
     ) -> Tuple[float, Optional[float], Optional[float]]:
+        """
+        Calculates the initial margin, stop-loss price, and take-profit price for a trade.
+        """
 
-        if atr_value is None or atr_value <= 0:
-            return 0, None, None  # Cannot size without ATR
+        # Bug fix: Added a check for NaN and non-positive ATR values.
+        if atr_value is None or pd.isna(atr_value) or atr_value <= 0:
+            return 0, None, None  # Cannot size without a valid ATR
 
         risk_in_dollars = equity * self.risk_pct
         stop_loss_distance = atr_value * self.atr_multiplier
