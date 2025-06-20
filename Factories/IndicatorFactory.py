@@ -44,6 +44,26 @@ class IndicatorFactory:
         self._df[f"STDDEV_{period}"] = ta.STDDEV(self._df[column], timeperiod=period)
         return self
 
+    def add_bollinger_bands(
+        self,
+        period: int,
+        nbdevup: float = 2.0,
+        nbdevdn: float = 2.0,
+        column: str = "close",
+    ) -> Self:
+        """Adds Bollinger Bands (BBANDS) indicator."""
+        upper, middle, lower = ta.BBANDS(
+            self._df[column],
+            timeperiod=period,
+            nbdevup=nbdevup,
+            nbdevdn=nbdevdn,
+            matype=0,  # SMA
+        )
+        self._df[f"BB_UPPER_{period}"] = upper
+        self._df[f"BB_MIDDLE_{period}"] = middle
+        self._df[f"BB_LOWER_{period}"] = lower
+        return self
+
     def add_macd(
         self,
         fastperiod: int = 12,
