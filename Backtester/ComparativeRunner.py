@@ -25,8 +25,21 @@ def print_comparison_report(results_dict: Dict[str, BacktestAnalysis]):
     print("\n" + "=" * 80)
     print(" " * 20 + "Comprehensive Backtest Comparison Report")
     print("=" * 80)
+
+    # Check if results_dict is not empty before proceeding
+    if not results_dict:
+        print("No results to display.")
+        print("=" * 80)
+        return
+
+    first_key = next(iter(results_dict))
+    if results_dict[first_key].results_df.empty:
+        print("No trades were executed to generate a report.")
+        print("=" * 80)
+        return
+
     print(
-        f"Period: [{results_dict["PercentBalanceSizer"].results_df.index[0].date()}] -> [{results_dict["PercentBalanceSizer"].results_df.index[-1].date()}]"
+        f"Period: [{results_dict[first_key].results_df.index[0].date()}] -> [{results_dict[first_key].results_df.index[-1].date()}]"
     )
     report_data = []
 
@@ -34,6 +47,8 @@ def print_comparison_report(results_dict: Dict[str, BacktestAnalysis]):
     metrics_to_display = {
         "initial_balance": "${:,.2f}",
         "final_balance": "${:,.2f}",
+        "initial_equity": "${:,.2f}",
+        "final_equity": "${:,.2f}",
         "roi_pct": "{:.2f}%",
         "total_profits": "${:,.2f}",
         "total_losses": "${:,.2f}",
@@ -60,7 +75,14 @@ def print_comparison_report(results_dict: Dict[str, BacktestAnalysis]):
                 value = analysis.metrics.get(
                     metric, 0
                 )  # Default to 0 if metric is missing
-                row[metric] = fmt.format(value) if pd.notna(value) else "N/A"
+                # Handle potential infinity or very large numbers before formatting
+                if isinstance(value, float) and (value == float("inf") or value > 1e18):
+                    row[metric] = "Infinity"
+                else:
+                    try:
+                        row[metric] = fmt.format(value) if pd.notna(value) else "N/A"
+                    except (ValueError, TypeError):
+                        row[metric] = str(value)
 
         report_data.append(row)
 
@@ -71,8 +93,8 @@ def print_comparison_report(results_dict: Dict[str, BacktestAnalysis]):
     # Create and print the DataFrame
     report_df = pd.DataFrame(report_data).set_index("Method")
 
-    # Transpose for better readability if there are many metrics
-    print(report_df.T)
+    # Transpose for better readability and use .to_string() for clean alignment
+    print(report_df.T.to_string())
     print("=" * 80)
 
 
@@ -101,7 +123,7 @@ def run_comparative_analysis(
         current_config = copy.deepcopy(base_config)
         current_config.sizing_strategy = sizer  # Assign the sizer object
 
-        runner = BacktestRunner(config=current_config, data=data)
+        runner = BacktestRunner(config=current_config, data=data.copy())
         analysis = runner.run()
         all_results[method_name] = analysis
 

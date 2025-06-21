@@ -5,6 +5,7 @@ from abc import ABC, abstractmethod
 # This is a common practice to avoid circular imports while still allowing for type hinting.
 # It tells the type checker that a 'Position' class will be available at runtime.
 if TYPE_CHECKING:
+    from AlgoTrade.Config.BacktestConfig import BacktestConfig
 
     class Position:
         pass
@@ -172,16 +173,9 @@ class Position:
         self.sl_price: Optional[float] = None
         self.tp_price: Optional[float] = None
         self.liquidation_price: Optional[float] = None
-
-        # Closing Metrics
-        self.close_time: Optional[datetime] = None
-        self.close_price: Optional[float] = None
-        self.close_notional_value: Optional[float] = None
-        self.close_fee: Optional[float] = None
-        self.pnl_gross: Optional[float] = None
-        self.net_pnl: Optional[float] = None
-        self.net_pnl_pct: Optional[float] = None
-        self.close_reason: Optional[str] = None
+        # --- ▼▼▼ NEW TRAILING STATE FLAGS ▼▼▼ ---
+        self.breakeven_sl_activated: bool = False
+        self.midpoint_sl_tp_activated: bool = False
 
     def open(
         self,
@@ -214,8 +208,9 @@ class Position:
         # Calculate core metrics
         self.open_notional_value = self.initial_margin * self.leverage
         self.open_fee = self.open_notional_value * self.open_fee_rate
-        effective_notional = self.open_notional_value - self.open_fee
-        self.amount = effective_notional / self.open_price if self.open_price > 0 else 0
+        self.amount = (
+            self.open_notional_value / self.open_price if self.open_price > 0 else 0
+        )
 
         self.liquidation_price = self.behavior.calculate_liquidation_price(
             self, account_balance_for_cross
@@ -244,6 +239,63 @@ class Position:
             self.net_pnl_pct = 0.0
 
         self.is_open = False
+
+    # --- ▼▼▼ NEW TRAILING LOGIC METHOD ▼▼▼ ---
+    def update_trailing_levels(self, current_price: float, config: "BacktestConfig"):
+        """Updates SL and TP based on the configured trailing logic."""
+        if not all([self.is_open, self.sl_price, self.tp_price, self.open_price]):
+            return
+
+        current_pnl_pct = (current_price - self.open_price) / self.open_price
+        if self.side == "short":
+            current_pnl_pct *= -1
+
+        # --- Stage 1: Breakeven Stop Loss ---
+        if config.breakeven_trigger_pct is not None and not self.breakeven_sl_activated:
+            if current_pnl_pct >= config.breakeven_trigger_pct:
+                new_sl = self.open_price * (
+                    1 + config.breakeven_sl_pct
+                    if self.side == "long"
+                    else -config.breakeven_sl_pct
+                )
+
+                # Only move SL up for longs and down for shorts
+                if (self.side == "long" and new_sl > self.sl_price) or (
+                    self.side == "short" and new_sl < self.sl_price
+                ):
+                    self.sl_price = new_sl
+                    self.breakeven_sl_activated = True
+
+        # --- Stage 2: Midpoint SL and TP Adjustment ---
+        if (
+            config.midpoint_trigger_pct is not None
+            and not self.midpoint_sl_tp_activated
+        ):
+            initial_tp_dist = abs(self.tp_price - self.open_price)
+            price_travel_dist = abs(current_price - self.open_price)
+
+            if price_travel_dist >= initial_tp_dist * config.midpoint_trigger_pct:
+                # Adjust SL
+                if config.midpoint_sl_adjustment_pct is not None:
+                    profit_to_lock = initial_tp_dist * config.midpoint_sl_adjustment_pct
+                    new_sl = (
+                        self.open_price + profit_to_lock
+                        if self.side == "long"
+                        else self.open_price - profit_to_lock
+                    )
+                    if (self.side == "long" and new_sl > self.sl_price) or (
+                        self.side == "short" and new_sl < self.sl_price
+                    ):
+                        self.sl_price = new_sl
+
+                # Extend TP
+                if config.midpoint_tp_extension_pct is not None:
+                    tp_extension = initial_tp_dist * config.midpoint_tp_extension_pct
+                    self.tp_price += (
+                        tp_extension if self.side == "long" else -tp_extension
+                    )
+
+                self.midpoint_sl_tp_activated = True
 
     def get_trade_info(self) -> Dict[str, Any]:
         """Returns a dictionary summary of the closed trade."""

@@ -33,6 +33,16 @@ class BacktestConfig:
     stop_loss_pct: Optional[float] = None
     take_profit_pct: Optional[float] = None
 
+    # --- ▼▼▼ NEW TRAILING STOP LOGIC ▼▼▼ ---
+    enable_trailing_stop: bool = False
+    breakeven_trigger_pct: Optional[float] = None  # e.g., 0.005 for 0.5% profit
+    breakeven_sl_pct: Optional[float] = 0.001  # Move SL to 0.1% profit
+    midpoint_trigger_pct: Optional[float] = None  # e.g., 0.5 for 50% to TP
+    midpoint_tp_extension_pct: Optional[float] = None  # e.g., 0.5 to extend TP by 50%
+    midpoint_sl_adjustment_pct: Optional[float] = (
+        None  # e.g., 0.3 to lock in 30% of profit
+    )
+
     def __post_init__(self):
         """Post-initialization checks and adjustments."""
         if self.trading_mode == TradingMode.SPOT:

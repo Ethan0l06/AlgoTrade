@@ -38,7 +38,7 @@ class BaseStrategy(ABC):
 
     def run_comparative(self):
         """Runs a comparative analysis across all sizing methods."""
-        print("\\n--- Running Comparative Analysis ---")
+        print("\n--- Running Comparative Analysis ---")
         signal_df = self.generate_signals()
         results = cr.run_comparative_analysis(self.config, signal_df)
         cr.print_comparison_report(results)

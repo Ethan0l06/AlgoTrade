@@ -77,7 +77,6 @@ class BacktestRunner:
                 else 1 - self.config.take_profit_pct
             )
 
-        self.balance -= initial_margin
         cross_margin_balance = (
             self.equity if self.config.trading_mode.value == "Cross" else None
         )
@@ -96,7 +95,7 @@ class BacktestRunner:
         if not self.position or not self.position.is_open:
             return
         self.position.close(time, price, reason)
-        self.balance += self.position.initial_margin + self.position.net_pnl
+        self.balance += self.position.net_pnl
         self.equity = self.balance
         self.trades_info.append(self.position.get_trade_info())
         self._create_new_position_object()
@@ -170,7 +169,7 @@ class BacktestRunner:
             unrealized_pnl = self.position.behavior.calculate_pnl(
                 self.position, close_price
             )
-            self.equity = self.balance + self.position.initial_margin + unrealized_pnl
+            self.equity = self.balance + unrealized_pnl
             notional_value = self.position.amount * close_price
             margin_used = self.position.initial_margin
             unrealized_pnl_pct = (
@@ -179,6 +178,7 @@ class BacktestRunner:
         else:
             self.equity = self.balance
 
+        timeline_cols["balance"].append(self.balance)  # <- MODIFICATION: Record balance
         timeline_cols["equity"].append(self.equity)
         timeline_cols["position_side"].append(
             self.position.side if self.position.is_open else None
@@ -221,6 +221,7 @@ class BacktestRunner:
         self._create_new_position_object()
 
         timeline_cols = {
+            "balance": [],  # <- MODIFICATION: Add balance to timeline
             "equity": [],
             "position_side": [],
             "unrealized_pnl": [],
