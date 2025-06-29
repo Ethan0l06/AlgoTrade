@@ -54,6 +54,7 @@ class MaDiffTimeframeStrategy(BaseStrategy):
             ),
         )
         merged["signal"] = pd.Series(signal, index=merged.index).shift(1).fillna(0)
+        merged["next_open"] = merged["open"].shift(-1)
         return merged
 
 
