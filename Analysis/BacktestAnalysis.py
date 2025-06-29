@@ -205,7 +205,7 @@ class BacktestAnalysis:
         print(f"Final Equity:           {self.metrics.get('final_equity', 0):,.2f}")
         print(f"ROI (Equity):           {self.metrics.get('roi_pct', 0):.2f}%")
         print(f"Profit:                 {self.metrics.get('total_profits', 0):,.2f}")
-        print(f"Loss:                   {self.metrics.get('total_losses', 0):.2f}")
+        print(f"Loss:                   {self.metrics.get('total_losses', 0):,.2f}")
         print(f"Sharpe Ratio:           {self.metrics.get('sharpe_ratio', 0):.2f}")
         print(f"Sortino Ratio:          {self.metrics.get('sortino_ratio', 0):.2f}")
         print(f"Calmar Ratio:           {self.metrics.get('calmar_ratio', 0):.2f}")

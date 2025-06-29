@@ -19,7 +19,7 @@ from AlgoTrade.Sizing.PercentBalanceSizer import PercentBalanceSizer
 from AlgoTrade.Sizing.FixedAmountSizer import FixedAmountSizer
 from AlgoTrade.Optimizer.StudyRunner import run_optimization
 from AlgoTrade.Analysis.BacktestAnalysis import BacktestAnalysis
-from AlgoTrade.Config.Paths import OPTIMIZER_DIR
+from AlgoTrade.Config.Paths import OPTIMIZER_DIR, ANALYSIS_DIR
 
 
 class MacdBBStrategy(BaseStrategy):
@@ -461,12 +461,12 @@ class MacdBBStrategy(BaseStrategy):
         print(f"Optimization results saved to: {filepath}")
         return filepath
 
+
     def analyze_parameter_importance(self, study: optuna.study.Study) -> Dict:
         """Analyze which parameters have the most impact on results"""
         if len(study.trials) < 10:
             return {"error": "Not enough trials for analysis"}
 
-        # Get parameter importance
         importance = {}
 
         try:
@@ -474,8 +474,8 @@ class MacdBBStrategy(BaseStrategy):
 
             param_importance = get_param_importances(study)
             importance["parameter_importance"] = param_importance
-        except:
-            importance["parameter_importance"] = "Could not calculate importance"
+        except Exception as e:
+            importance["parameter_importance"] = f"Could not calculate importance: {str(e)}"
 
         # Analyze parameter ranges for best trials
         n_best = min(10, len(study.trials))
@@ -486,16 +486,24 @@ class MacdBBStrategy(BaseStrategy):
             values = [
                 t.params.get(param_name) for t in best_trials if param_name in t.params
             ]
-            if values:
+
+            # Only calculate statistics if values are numeric
+            try:
+                numeric_values = [float(v) for v in values]
                 param_stats[param_name] = {
-                    "mean": np.mean(values),
-                    "std": np.std(values),
-                    "min": np.min(values),
-                    "max": np.max(values),
+                    "mean": np.mean(numeric_values),
+                    "std": np.std(numeric_values),
+                    "min": np.min(numeric_values),
+                    "max": np.max(numeric_values),
+                }
+            except (ValueError, TypeError):
+                # Non-numeric parameter, just store unique values
+                param_stats[param_name] = {
+                    "type": "categorical",
+                    "unique_values": list(set(values)),
                 }
 
         importance["best_trials_param_stats"] = param_stats
-
         return importance
 
 
@@ -621,11 +629,11 @@ def main():
     """Enhanced main function with better organization"""
     # --- Configuration ---
     CONFIG = {
-        "RUN_VALIDATION": True,
+        "RUN_VALIDATION": False,
         "RUN_SINGLE_BACKTEST": True,
         "RUN_COMPARATIVE_ANALYSIS": False,
         "RUN_OPTIMIZATION": False,
-        "SAVE_RESULTS": False,
+        "SAVE_RESULTS": True,
         "GENERATE_REPORT": False,
     }
 
@@ -640,15 +648,15 @@ def main():
 
     # --- Best Known Parameters ---
     BEST_PARAMS = {
-        "bb_period": 20,
-        "bb_std_dev": 2.0,
-        "macd_fast": 12,
-        "macd_slow": 26,
-        "macd_signal": 9,
-        "signal_mode": "hybrid",
+        "bb_period": 42,
+        "bb_std_dev": 1.8,
+        "macd_fast": 5,
+        "macd_slow": 60,
+        "macd_signal": 13,
+        "signal_mode": "trend_following",
         "volume_filter": True,
-        "volume_ma_period": 20,
-        "volume_threshold": 1.2,
+        "volume_ma_period": 14,
+        "volume_threshold": 1.6,
     }
 
     print(f"\n{'='*60}")
@@ -680,7 +688,7 @@ def main():
         print("-" * 50)
 
         leverage = 10
-        sizer = AtrBandsSizer(
+        sizer_atr = AtrBandsSizer(
             risk_pct=0.01,
             atr_multiplier=2.0,
             risk_reward_ratio=1.5,
@@ -689,17 +697,18 @@ def main():
             min_atr_multiplier=0.5,
         )
 
+        sizer_percent = PercentBalanceSizer(
+            percent=0.1
+        )
+
         config_single = BacktestConfig(
             initial_balance=3000.0,
             leverage=leverage,
             trading_mode=TradingMode.CROSS,
-            sizing_strategy=sizer,
+            sizing_strategy=sizer_percent,
             # Enhanced realism settings
             enable_slippage=True,
             base_slippage_bps=1.0,
-            enable_market_impact=True,
-            maker_fee_rate=0.0001,
-            taker_fee_rate=0.0004,
             reduced_weekend_liquidity=True,
             # Trailing stops
             enable_trailing_stop=True,
@@ -724,7 +733,7 @@ def main():
         if CONFIG["SAVE_RESULTS"]:
             results_df = analysis.results_df
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            results_file = f"MACD_BB_results_{timestamp}.csv"
+            results_file = f"{ANALYSIS_DIR}\MACD_BB_results_{timestamp}.csv"
             results_df.to_csv(results_file)
             print(f"\n💾 Results saved to: {results_file}")
 
@@ -739,6 +748,12 @@ def main():
             trading_mode=TradingMode.CROSS,
             enable_slippage=True,
             base_slippage_bps=1.0,
+            enable_trailing_stop=True,
+            breakeven_trigger_pct=0.01,
+            breakeven_sl_pct=0.001,
+            midpoint_trigger_pct=0.5,
+            midpoint_tp_extension_pct=0.3,
+            midpoint_sl_adjustment_pct=0.2,
         )
 
         strategy_comparison = MacdBBStrategy(
@@ -763,13 +778,26 @@ def main():
             risk_pct=0.01, atr_multiplier=2.0, risk_reward_ratio=1.5, leverage=10
         )
 
+        percent_sizer_opt = PercentBalanceSizer(percent=0.1)
+
         config_optimizer = BacktestConfig(
-            initial_balance=3000.0,
+            initial_balance=30.0,
             leverage=10,
             trading_mode=TradingMode.CROSS,
-            sizing_strategy=atr_sizer_opt,
+            sizing_strategy=percent_sizer_opt,
+            # Enhanced realism settings
             enable_slippage=True,
             base_slippage_bps=1.0,
+            maker_fee_rate=0.0002,
+            taker_fee_rate=0.0006,
+            reduced_weekend_liquidity=True,
+            # Trailing stops
+            enable_trailing_stop=True,
+            breakeven_trigger_pct=0.01,
+            breakeven_sl_pct=0.001,
+            midpoint_trigger_pct=0.5,
+            midpoint_tp_extension_pct=0.3,
+            midpoint_sl_adjustment_pct=0.2,
         )
 
         # Load data for optimization
@@ -792,7 +820,7 @@ def main():
             data_dict=data_for_opt,
             config=config_optimizer,
             strategy_function=create_optimizer_strategy_function,
-            n_trials=100,
+            n_trials=10,
             objective_function=selected_objective,
         )
 
@@ -822,7 +850,7 @@ def main():
                 for param, stats in importance["best_trials_param_stats"].items():
                     print(f"  {param}:")
                     for stat_name, stat_value in stats.items():
-                        print(f"    {stat_name}: {stat_value:.3f}")
+                        print(f"    {stat_name}: {stat_value}")
 
     print(f"\n{'='*60}")
     print("Strategy execution completed!")

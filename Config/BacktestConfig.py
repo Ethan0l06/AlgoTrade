@@ -18,8 +18,8 @@ class BacktestConfig:
     leverage: int = 1
 
     # --- Enhanced Fee Structure ---
-    maker_fee_rate: float = 0.0001  # 0.01% for limit orders
-    taker_fee_rate: float = 0.0004  # 0.04% for market orders
+    maker_fee_rate: float = 0.0002  # 0.01% for limit orders
+    taker_fee_rate: float = 0.0006  # 0.04% for market orders
     # Legacy support
     open_fee_rate: float = field(init=False)
     close_fee_rate: float = field(init=False)

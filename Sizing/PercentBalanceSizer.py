@@ -4,7 +4,8 @@ import pandas as pd
 
 
 class PercentBalanceSizer(BaseSizer):
-    """Uses a fixed percentage of the total account balance for each trade's margin."""
+    """Uses a fixed percentage of the total account balance for each trade's margin.\n
+    percent : 0.1 = 10% of balance for margin."""
 
     def __init__(self, percent: float):
         if not 0 < percent <= 1:
