@@ -633,7 +633,7 @@ def main():
         "RUN_SINGLE_BACKTEST": True,
         "RUN_COMPARATIVE_ANALYSIS": False,
         "RUN_OPTIMIZATION": False,
-        "SAVE_RESULTS": True,
+        "SAVE_RESULTS": False,
         "GENERATE_REPORT": False,
     }
 
@@ -729,11 +729,14 @@ def main():
             generate_quantstats_report=CONFIG["GENERATE_REPORT"]
         )
 
+        analysis.show_complete_analysis_dashboard()
+        analysis.show_complete_graph_dashboard()
+
         # Save results
         if CONFIG["SAVE_RESULTS"]:
             results_df = analysis.results_df
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            results_file = f"{ANALYSIS_DIR}\MACD_BB_results_{timestamp}.csv"
+            results_file = f"{ANALYSIS_DIR}\\MACD_BB_results_{timestamp}.csv"
             results_df.to_csv(results_file)
             print(f"\n💾 Results saved to: {results_file}")
 

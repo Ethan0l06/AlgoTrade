@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from datetime import datetime
 import numpy as np
+from typing import Optional, Dict, List
 
 # Import for the new interactive plot
 import plotly.graph_objects as go
@@ -24,16 +25,19 @@ class BacktestAnalysis:
         if self.trades.empty:
             print("/!\\ No trades were executed during the backtest.")
             self.metrics = {}
+            self.table_plotter = None
             return
 
         self.metrics = self.compute_metrics()
+
+        # Initialize table plotter for enhanced analysis (lazy import to avoid circular dependency)
+        self.table_plotter = None
 
     def compute_metrics(self) -> dict:
         """
         Computes a comprehensive set of performance metrics for the backtest.
         """
         metrics = {}
-        # ... (This entire method remains unchanged from the previous version)
         # --- Trade Metrics ---
         self.trades["duration"] = pd.to_datetime(
             self.trades["close_time"]
@@ -188,9 +192,252 @@ class BacktestAnalysis:
         # Show the plot
         fig.show()
 
-    # The rest of your plotting methods (print_metrics, plot_equity, etc.)
+    def _get_table_plotter(self):
+        """Lazy initialization of table plotter to avoid circular imports."""
+        if self.table_plotter is None:
+            from AlgoTrade.Analysis.TablePlots import AnalysisTablePlotter
+
+            self.table_plotter = AnalysisTablePlotter(self, style="dark")
+        return self.table_plotter
+
+    # === ▼▼▼ NEW TABLE ANALYSIS METHODS ▼▼▼ ===
+
+    def show_performance_summary_table(self, save_path: str = None):
+        """Show interactive performance summary table."""
+        if not self.metrics:
+            print("No table plotter available. No trades were executed.")
+            return
+
+        plotter = self._get_table_plotter()
+        fig = plotter.create_performance_summary_table(save_path)
+        if fig:
+            fig.show()
+
+    def show_trades_analysis_table(self, top_n: int = 10, save_path: str = None):
+        """Show detailed trades analysis table."""
+        if not self.metrics:
+            print("No table plotter available. No trades were executed.")
+            return
+
+        plotter = self._get_table_plotter()
+        fig = plotter.create_trades_analysis_table(top_n)
+        if fig:
+            fig.show()
+
+    def show_monthly_performance_table(self, save_path: str = None):
+        """Show monthly performance breakdown table."""
+        if not self.metrics:
+            print("No table plotter available. No trades were executed.")
+            return
+
+        plotter = self._get_table_plotter()
+        fig = plotter.create_monthly_performance_table()
+        if fig:
+            fig.show()
+
+    def show_risk_metrics_table(self, save_path: str = None):
+        """Show comprehensive risk metrics table."""
+        if not self.metrics:
+            print("No table plotter available. No trades were executed.")
+            return
+
+        plotter = self._get_table_plotter()
+        fig = plotter.create_risk_metrics_table()
+        if fig:
+            fig.show()
+
+    def show_trade_statistics_table(self, save_path: str = None):
+        """Show detailed trade statistics table."""
+        if not self.metrics:
+            print("No table plotter available. No trades were executed.")
+            return
+
+        plotter = self._get_table_plotter()
+        fig = plotter.create_trade_statistics_table()
+        if fig:
+            fig.show()
+
+    def show_complete_analysis_dashboard(self, save_directory: str = None):
+        """
+        Show complete analysis dashboard with all tables.
+
+        Args:
+            save_directory: Optional directory to save all HTML files
+        """
+        if not self.metrics:
+            print("No table plotter available. No trades were executed.")
+            return
+
+        print("\n" + "=" * 60)
+        print("🚀 COMPREHENSIVE TRADING ANALYSIS DASHBOARD")
+        print("=" * 60)
+
+        plotter = self._get_table_plotter()
+        plotter.show_dashboard()
+
+        if save_directory:
+            figures = plotter.create_dashboard(save_path=save_directory)
+            print(f"\n💾 All analysis tables saved to: {save_directory}")
+            
+    def _get_graph_plotter(self):
+        """Lazy initialization of graph plotter to avoid circular imports."""
+        if not hasattr(self, 'graph_plotter') or self.graph_plotter is None:
+            from AlgoTrade.Analysis.GraphPlots import TradingGraphPlotter
+            self.graph_plotter = TradingGraphPlotter(self, style="dark")
+        return self.graph_plotter
+
+    # === ▼▼▼ NEW GRAPH ANALYSIS METHODS ▼▼▼ ===
+
+    def show_equity_with_drawdown(self):
+        """Show equity curve with drawdown analysis."""
+        if not self.metrics:
+            print("No data available for graph analysis.")
+            return
+        plotter = self._get_graph_plotter()
+        fig = plotter.plot_equity_with_drawdown()
+        if fig: fig.show()
+
+    def show_rolling_performance(self, windows: List[int] = [30, 60, 90]):
+        """Show rolling performance metrics."""
+        if not self.metrics:
+            print("No data available for graph analysis.")
+            return
+        plotter = self._get_graph_plotter()
+        fig = plotter.plot_rolling_performance(windows)
+        if fig: fig.show()
+
+    def show_cumulative_returns_comparison(self):
+        """Show cumulative returns vs benchmarks."""
+        if not self.metrics:
+            print("No data available for graph analysis.")
+            return
+        plotter = self._get_graph_plotter()
+        fig = plotter.plot_cumulative_returns_comparison()
+        if fig: fig.show()
+
+    def show_streak_analysis(self):
+        """Show win/loss streak analysis."""
+        if not self.metrics:
+            print("No data available for graph analysis.")
+            return
+        plotter = self._get_graph_plotter()
+        fig = plotter.plot_streak_analysis()
+        if fig: fig.show()
+
+    def show_correlation_analysis(self, benchmark_data: Optional[pd.DataFrame] = None):
+        """Show correlation analysis with market factors."""
+        if not self.metrics:
+            print("No data available for graph analysis.")
+            return
+        plotter = self._get_graph_plotter()
+        fig = plotter.plot_correlation_analysis(benchmark_data)
+        if fig: fig.show()
+
+    def show_calendar_heatmap(self):
+        """Show calendar-based performance heatmap."""
+        if not self.metrics:
+            print("No data available for graph analysis.")
+            return
+        plotter = self._get_graph_plotter()
+        fig = plotter.plot_calendar_heatmap()
+        if fig: fig.show()
+
+    def show_market_regime_analysis(self):
+        """Show performance across different market regimes."""
+        if not self.metrics:
+            print("No data available for graph analysis.")
+            return
+        plotter = self._get_graph_plotter()
+        fig = plotter.plot_market_regime_analysis()
+        if fig: fig.show()
+
+    def show_interactive_trade_explorer(self):
+        """Show interactive candlestick chart with trade markers."""
+        if not self.metrics:
+            print("No data available for graph analysis.")
+            return
+        plotter = self._get_graph_plotter()
+        fig = plotter.plot_interactive_trade_explorer()
+        if fig: fig.show()
+
+    def show_parameter_sensitivity(self, param_results: Dict[str, Dict[str, float]]):
+        """Show parameter sensitivity analysis."""
+        if not self.metrics:
+            print("No data available for graph analysis.")
+            return
+        plotter = self._get_graph_plotter()
+        fig = plotter.plot_parameter_sensitivity(param_results)
+        if fig: fig.show()
+
+    def show_animated_equity_buildup(self, speed: int = 50):
+        """Show animated equity curve buildup."""
+        if not self.metrics:
+            print("No data available for graph analysis.")
+            return
+        plotter = self._get_graph_plotter()
+        fig = plotter.create_animated_equity_buildup(speed)
+        if fig: fig.show()
+
+    def show_monte_carlo_analysis(self, n_simulations: int = 1000, forecast_days: int = 252):
+        """Show Monte Carlo simulation analysis."""
+        if not self.metrics:
+            print("No data available for graph analysis.")
+            return
+        plotter = self._get_graph_plotter()
+        fig = plotter.plot_monte_carlo_analysis(n_simulations, forecast_days)
+        if fig: fig.show()
+
+    def show_ml_insights(self):
+        """Show machine learning insights and patterns."""
+        if not self.metrics:
+            print("No data available for graph analysis.")
+            return
+        plotter = self._get_graph_plotter()
+        fig = plotter.plot_ml_insights()
+        if fig: fig.show()
+
+    def show_complete_graph_dashboard(self, save_directory: str = None, param_results: dict = None):
+        """
+        Show complete graph analysis dashboard with all visualizations.
+        
+        Args:
+            save_directory: Optional directory to save all HTML files
+            param_results: Optional parameter sensitivity data
+        """
+        if not self.metrics:
+            print("No data available for graph analysis.")
+            return
+        
+        print("\n" + "="*60)
+        print("🚀 COMPREHENSIVE GRAPH ANALYSIS DASHBOARD")
+        print("="*60)
+        
+        plotter = self._get_graph_plotter()
+        plotter.show_graph_dashboard(param_results=param_results)
+        
+        if save_directory:
+            figures = plotter.create_complete_graph_dashboard(save_path=save_directory, param_results=param_results)
+            print(f"\n💾 All graphs saved to: {save_directory}")
+
+    def show_comparative_analysis_table(self, comparative_results: dict):
+        """
+        Show comparative analysis table for multiple strategies.
+
+        Args:
+            comparative_results: Dictionary of strategy_name -> BacktestAnalysis
+        """
+        if not self.metrics:
+            print("No table plotter available. No trades were executed.")
+            return
+
+        plotter = self._get_table_plotter()
+        fig = plotter.create_comparative_performance_table(comparative_results)
+        if fig:
+            fig.show()
+
+    # The rest of your existing plotting methods
     def print_metrics(self):
-        # ... (unchanged)
+        """Print metrics in a formatted way."""
         if not self.metrics:
             print("No metrics to display.")
             return
