@@ -92,7 +92,42 @@ class IndicatorFactory:
         """Adds a Simple Moving Average (SMA) column for volume."""
         self._df[f"VOLUME_SMA_{period}"] = ta.SMA(self._df[column], timeperiod=period)
         return self
+
+    def add_adx(self, period: int) -> Self:
+        """Adds the Average Directional Index (ADX) indicator."""
+        self._df[f"ADX_{period}"] = ta.ADX(
+            self._df["high"], self._df["low"], self._df["close"], timeperiod=period
+        )
+        return self
+
+    def add_dmi(self, period: int) -> Self:
+        """Adds the Directional Movement Index (DMI) indicator."""
+        self._df[f"DMI_{period}"] = ta.DX(
+            self._df["high"], self._df["low"], self._df["close"], timeperiod=period
+        )
+        return self
     
+    def add_minus_di(self, period: int) -> Self:
+        """Adds the Directional Movement Index (DMI) indicator."""
+        self._df[f"DI_minus_{period}"] = ta.MINUS_DI(
+            self._df["high"], self._df["low"], self._df["close"], timeperiod=period
+        )
+        return self
+    
+    def add_plus_di(self, period: int) -> Self:
+        """Adds the Directional Movement Index (DMI) indicator."""
+        self._df[f"DI_plus_{period}"] = ta.PLUS_DI(
+            self._df["high"], self._df["low"], self._df["close"], timeperiod=period
+        )
+        return self
+
+    def add_williams_r(self, period: int) -> Self:
+        """Adds the Williams %R indicator."""
+        self._df[f"WilliamsR_{period}"] = ta.WILLR(
+            self._df["high"], self._df["low"], self._df["close"], timeperiod=period
+        )
+        return self
+
     def get_data(self) -> pd.DataFrame:
         """
         Returns the final DataFrame with all computed indicators.
