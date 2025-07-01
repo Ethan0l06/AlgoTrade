@@ -88,6 +88,11 @@ class IndicatorFactory:
         self._df[f"RSI_{period}"] = ta.RSI(self._df[column], timeperiod=period)
         return self
 
+    def add_volume_sma(self, period: int, column: str = "volume") -> Self:
+        """Adds a Simple Moving Average (SMA) column for volume."""
+        self._df[f"VOLUME_SMA_{period}"] = ta.SMA(self._df[column], timeperiod=period)
+        return self
+    
     def get_data(self) -> pd.DataFrame:
         """
         Returns the final DataFrame with all computed indicators.

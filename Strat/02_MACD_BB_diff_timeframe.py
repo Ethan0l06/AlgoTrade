@@ -635,6 +635,7 @@ def main():
         "RUN_OPTIMIZATION": False,
         "SAVE_RESULTS": False,
         "GENERATE_REPORT": False,
+        "DEEP_PLOT": False,
     }
 
     # --- Strategy Parameters ---
@@ -729,7 +730,8 @@ def main():
             generate_quantstats_report=CONFIG["GENERATE_REPORT"]
         )
 
-        analysis.show_complete_analysis_dashboard()
+        if CONFIG["DEEP_PLOT"]:
+            analysis.show_complete_analysis_dashboard()
         analysis.show_complete_graph_dashboard()
 
         # Save results

@@ -437,7 +437,7 @@ class BacktestRunner:
         if self.is_running:
             return BacktestAnalysis(self)
 
-        print("Starting enhanced backtest...")
+        print("Starting backtest...")
         self.is_running = True
         self.balance = self.config.initial_balance
         self.equity = self.config.initial_balance

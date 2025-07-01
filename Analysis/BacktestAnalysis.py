@@ -20,7 +20,9 @@ class BacktestAnalysis:
         self.results_df = runner.data.copy()
         self.trades = pd.DataFrame(runner.trades_info)
         # <- MODIFICATION: Added 'balance' to the wallet DataFrame
-        self.wallet = self.results_df[["balance", "equity", "drawdown_pct"]].copy()
+        self.wallet = self.results_df[
+            ["buy_and_hold_equity", "balance", "equity", "drawdown_pct"]
+        ].copy()
 
         if self.trades.empty:
             print("/!\\ No trades were executed during the backtest.")
@@ -77,6 +79,7 @@ class BacktestAnalysis:
         metrics["final_balance"] = self.wallet.iloc[-1]["balance"]
         metrics["initial_equity"] = self.wallet.iloc[0]["equity"]
         metrics["final_equity"] = self.wallet.iloc[-1]["equity"]
+        metrics["buy_and_hold_equity"] = self.wallet.iloc[-1]["buy_and_hold_equity"]
 
         metrics["max_drawdown_equity"] = self.wallet["drawdown_pct"].max()
         # ROI is based on the growth of total Equity
@@ -123,74 +126,6 @@ class BacktestAnalysis:
                 metrics["calmar_ratio"],
             ) = (0, 0, 0)
         return metrics
-
-    # === ▼▼▼ NEW INTERACTIVE PLOTTING METHOD ▼▼▼ ===
-
-    def plot_interactive_trades(self):
-        """
-        Generates a high-performance, interactive candlestick chart with trade
-        entry markers using Plotly.
-        """
-        if self.results_df.empty:
-            print("No data to plot.")
-            return
-
-        df = self.results_df
-
-        # This vectorized approach is highly efficient and avoids slow loops.
-        # It finds the exact candle where a position *starts*.
-        long_entries = df[
-            (df["position_side"] == "long") & (df["position_side"].shift(1) != "long")
-        ]
-        short_entries = df[
-            (df["position_side"] == "short") & (df["position_side"].shift(1) != "short")
-        ]
-
-        # Create the candlestick chart
-        candlestick_trace = go.Candlestick(
-            x=df.index,
-            open=df["open"],
-            high=df["high"],
-            low=df["low"],
-            close=df["close"],
-            name="Candlesticks",
-        )
-
-        # Create markers for long entries
-        long_marker_trace = go.Scatter(
-            x=long_entries.index,
-            y=long_entries["low"] * 0.99,  # Place marker slightly below the low
-            mode="markers",
-            marker=dict(color="green", symbol="triangle-up", size=10),
-            name="Long Entry",
-        )
-
-        # Create markers for short entries
-        short_marker_trace = go.Scatter(
-            x=short_entries.index,
-            y=short_entries["high"] * 1.01,  # Place marker slightly above the high
-            mode="markers",
-            marker=dict(color="red", symbol="triangle-down", size=10),
-            name="Short Entry",
-        )
-
-        # Combine traces and create the figure
-        fig = go.Figure(data=[candlestick_trace, long_marker_trace, short_marker_trace])
-
-        # Customize layout
-        fig.update_layout(
-            title="Interactive Trade Visualization",
-            xaxis_title="Date",
-            yaxis_title="Price",
-            template="plotly_dark",  # Use a dark theme
-            xaxis_rangeslider_visible=False,  # Disable the range slider for a cleaner look
-            legend=dict(
-                orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1
-            ),
-        )
-
-        # Show the plot
-        fig.show()
 
     def _get_table_plotter(self):
         """Lazy initialization of table plotter to avoid circular imports."""
@@ -278,7 +213,7 @@ class BacktestAnalysis:
         if save_directory:
             figures = plotter.create_dashboard(save_path=save_directory)
             print(f"\n💾 All analysis tables saved to: {save_directory}")
-            
+
     def _get_graph_plotter(self):
         """Lazy initialization of graph plotter to avoid circular imports."""
         if not hasattr(self, 'graph_plotter') or self.graph_plotter is None:
@@ -407,14 +342,14 @@ class BacktestAnalysis:
         if not self.metrics:
             print("No data available for graph analysis.")
             return
-        
+
         print("\n" + "="*60)
         print("🚀 COMPREHENSIVE GRAPH ANALYSIS DASHBOARD")
         print("="*60)
-        
+
         plotter = self._get_graph_plotter()
         plotter.show_graph_dashboard(param_results=param_results)
-        
+
         if save_directory:
             figures = plotter.create_complete_graph_dashboard(save_path=save_directory, param_results=param_results)
             print(f"\n💾 All graphs saved to: {save_directory}")
@@ -450,6 +385,9 @@ class BacktestAnalysis:
         print(f"Final Balance:          {self.metrics.get('final_balance', 0):,.2f}")
         print(f"Initial Equity:         {self.metrics.get('initial_equity', 0):,.2f}")
         print(f"Final Equity:           {self.metrics.get('final_equity', 0):,.2f}")
+        print(
+            f"Final Buy&Hold Equity:  {self.metrics.get('buy_and_hold_equity', 0):,.2f}"
+        )
         print(f"ROI (Equity):           {self.metrics.get('roi_pct', 0):.2f}%")
         print(f"Profit:                 {self.metrics.get('total_profits', 0):,.2f}")
         print(f"Loss:                   {self.metrics.get('total_losses', 0):,.2f}")
