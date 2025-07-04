@@ -172,11 +172,11 @@ class DataManager:
                 if fetched_data:
                     ohlcv.extend(fetched_data)
                     print(
-                        f"fetched ohlcv data for {symbol} from {datetime.fromtimestamp(current_date_ms / 1000).strftime("%Y-%m-%d %H:%M:%S")}"
+                        f"fetched ohlcv data for {symbol} ({timeframe}) from {datetime.fromtimestamp(current_date_ms / 1000).strftime("%Y-%m-%d %H:%M:%S")}"
                     )
                 else:
                     print(
-                        f"fetched ohlcv data for {symbol} from {datetime.fromtimestamp(current_date_ms / 1000).strftime("%Y-%m-%d %H:%M:%S")} (empty)"
+                        f"fetched ohlcv data for {symbol} ({timeframe}) from {datetime.fromtimestamp(current_date_ms / 1000).strftime("%Y-%m-%d %H:%M:%S")} (empty)"
                     )
 
                 current_date_ms = min(
